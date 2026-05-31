@@ -1,15 +1,45 @@
 'use client'
+
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function App() {
+  const router = useRouter();
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [products] = useState([
-    { id: 1, name: "Product 1", price: "$29.99" },
-    { id: 2, name: "Product 2", price: "$39.99" },
-    { id: 3, name: "Product 3", price: "$19.99" },
-    { id: 4, name: "Product 4", price: "$49.99" },
-  ]);
+  const [products, setProducts] = useState<{ id: string; name: string; price: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function initializePage() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const res = await fetch("http://localhost:8000/api/products");
+      const data = await res.json();
+
+      setProducts(data);
+      setLoading(false);
+    }
+
+    initializePage();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -43,6 +73,7 @@ export default function App() {
               className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
             >
               <div className="aspect-square bg-gray-100 rounded mb-4"></div>
+
               <h3 className="mb-2">{product.name}</h3>
               <p className="text-gray-600">{product.price}</p>
             </div>
